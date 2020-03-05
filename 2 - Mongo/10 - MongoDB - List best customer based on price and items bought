@@ -1,0 +1,11 @@
+####################################
+#New Data set
+####################################
+//Step:1
+db.retailers.aggregate([ { $lookup: { from:"Customers", localField:"End_User_ID", foreignField:"End_User_ID", as :"Cust_Retailer" }}, {$out:"stage_1"}]).pretty()
+
+//Step2
+db.stage_1.aggregate([ { $lookup: { from:"geoLocation", localField:"Cust_Retailer.Address", foreignField:"Address", as :"userData" }}, {$out:"stage_2"}]).pretty()
+
+//Final
+db.stage_2.aggregate([ { $match: {$and:[{$or:[{Order_Items_List:{$size:3}}, {Order_Items_List:{$size:4}}]}, {Mode_of_payment:{$in:["debit_card", "creadit_card"]}}]}}, { $group: {_id: {Order_ID:"$Purchase_Order_ID"}, payment_Mode:{"$first":"$Mode_of_payment"}, User:{"$first":"$End_User_ID"}, Order_Items:{"$first":"$Order_Items_List"}, Location:{"$first":"$userData"}}}, {$limit:10}]).pretty()
